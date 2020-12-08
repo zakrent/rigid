@@ -10,12 +10,13 @@ int main(int argc, char *argv[]){
 	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_Window *window = SDL_CreateWindow("Rigid",
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-		1920/2, 1080/2,
+		1920/1.5f, 1080/1.5f,
 		NULL);
 		
 	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
 	
 	Game *game = malloc(sizeof(Game));
+	ASSERT(game);
 	InitGame(game);
 		
 	bool running = true;

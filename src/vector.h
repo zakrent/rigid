@@ -42,6 +42,8 @@ v2 Vec2(real x, real y);
 v2 V2Add(v2 a, v2 b);
 v2 V2Sub(v2 a, v2 b);
 v2 V2Mul(real a, v2 b);
+v2 V2Norm(v2 a);
+real V2Len(v2 a);
 real V2Dot(v2 a, v2 b);
 
 v3 Vec3(real x, real y, real z);

@@ -1,9 +1,10 @@
 #define BODY_MAX_VERT 32
-#define BODY_MAX 32
+#define BODY_MAX 2048
 
 typedef struct{
 	v2 position;
 	v2 velocity;
+	v2 impulse;
 	rect AABB;
 	u32 vertCount;
 	real inv_mass;

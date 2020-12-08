@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <math.h>
 
 #include "common.h"
 #include "vector.h"
@@ -31,6 +32,16 @@ v2 V2Mul(real a, v2 b){
 
 real V2Dot(v2 a, v2 b){
 	return a.x*b.x+a.y*b.y;
+}
+
+v2 V2Norm(v2 a){
+	double len = V2Len(a);
+	real invlen = 1.0/len;
+	return V2Mul(invlen, a);
+}
+
+real V2Len(v2 a){
+	return sqrt(a.x*a.x + a.y*a.y);
 }
 
 v3 Vec3(real x, real y, real z){
