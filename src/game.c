@@ -5,7 +5,7 @@
 #include "vector.h"
 #include "game.h"
 
-#define CIRCLE_VERT_COUNT 16
+#define CIRCLE_VERT_COUNT 32
 static Body CreateCircle(v2 pos, v2 vel, real radius, real mass){
 	Body body = (Body){
 		.position = pos,
@@ -22,7 +22,7 @@ static Body CreateCircle(v2 pos, v2 vel, real radius, real mass){
 	return body;
 }
 
-static Body CreateRectangle(v2 pos, real w, real h, v2 vel, real mass){
+static Body CreateRectangle(v2 pos, v2 vel, real w, real h, real mass){
 	Body body = (Body){
 		.position = pos,
 		.velocity = vel,
@@ -48,6 +48,7 @@ void InitGame(Game *game){
 	//Todo: check this
 	//*game = (Game){0};
 	AddBody(CreateCircle(Vec2(100.0f,-100.0f), Vec2(0.1f, 0.1f), 20.0f, 1.0f), game);
+	AddBody(CreateRectangle(Vec2(320.0f,150.0f), Vec2(0.0f, 0.0f), 20.0f, 20.0f, 1.0f), game);
 	
 	//AddBody(CreateCircle(Vec2(300.0f,200.0f), Vec2(0.0f, -0.1f), 20.0f, 1.0f), game);
 
@@ -61,8 +62,11 @@ void InitGame(Game *game){
 static void TranslateBodies(Body *bodies, u32 count){
 	for(int i = 0; i < count; i++){
 		Body *body = bodies+i;
+		body->rotation += 0.01;
 		for(int j = 0; j < body->vertCount; j++){
-			v2 vert = V2Add(body->shape[j], body->position);
+			real angle = body->rotation;
+			v2 rotated = Vec2(cos(angle)*body->shape[j].x-sin(angle)*body->shape[j].y, sin(angle)*body->shape[j].x+cos(angle)*body->shape[j].y);
+			v2 vert = V2Add(rotated, body->position);
 			body->vertices[j] = vert;
 		}
 	}
@@ -237,6 +241,10 @@ static void DrawBodies(SDL_Renderer *renderer, Body *bodies, u32 count){
 			.h = body->AABB.h,
 		};
 		SDL_RenderDrawRect(renderer, &aabbRect);
+		
+		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+		
+		SDL_RenderDrawLine(renderer, points[0].x, points[0].y, (i32)body->position.x, (i32)body->position.y);
 		
 		Free(points);
 	}

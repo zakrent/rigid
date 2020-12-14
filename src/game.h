@@ -6,6 +6,7 @@ typedef struct{
 	v2 velocity;
 	v2 impulse;
 	rect AABB;
+	real rotation;
 	u32 vertCount;
 	real inv_mass;
 	v2 shape[BODY_MAX_VERT];
