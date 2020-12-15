@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 #define KIBIBYTES(n) (n*1024)
 #define MEBIBYTES(n) (n*1024*KIBIBYTES(1))
 #define GIBIBYTES(n) (n*1024*MEBIBYTES(1))

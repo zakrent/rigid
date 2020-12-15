@@ -1,12 +1,16 @@
-#include <SDL2/SDL.h>
-#include <math.h>
+#include <raylib.h>
+#include <raymath.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-#include "common.h"
-#include "vector.h"
 #include "game.h"
 
+#define MAX(x, y) ((x>y)?x:y)
+#define MIN(x, y) ((x<y)?x:y)
+
+/*
 #define CIRCLE_VERT_COUNT 32
-static Body CreateCircle(v2 pos, v2 vel, real radius, real mass){
+static Body CreateCircle(Vector2 pos, Vector2 vel, float radius, float mass){
 	Body body = (Body){
 		.position = pos,
 		.velocity = vel,
@@ -16,13 +20,13 @@ static Body CreateCircle(v2 pos, v2 vel, real radius, real mass){
 	};
 	
 	for(int i = 0; i < CIRCLE_VERT_COUNT; i++){
-		body.shape[i] = Vec2(radius*cosf(i/(real)CIRCLE_VERT_COUNT*2.0f*M_PI), radius*sinf(i/(real)CIRCLE_VERT_COUNT*2.0f*M_PI));
+		body.shape[i] = Vector2(radius*cosf(i/(float)CIRCLE_VERT_COUNT*2.0f*M_PI), radius*sinf(i/(float)CIRCLE_VERT_COUNT*2.0f*M_PI));
 	}
 	
 	return body;
 }
 
-static Body CreateRectangle(v2 pos, v2 vel, real w, real h, real mass){
+static Body CreateRectangleangle(Vector2 pos, Vector2 vel, float w, float h, float mass){
 	Body body = (Body){
 		.position = pos,
 		.velocity = vel,
@@ -31,10 +35,10 @@ static Body CreateRectangle(v2 pos, v2 vel, real w, real h, real mass){
 		.inv_mass = 1.0f/mass
 	};
 	
-	body.shape[0] = Vec2(w/2.0f, h/2.0f);
-	body.shape[1] = Vec2(w/2.0f, -h/2.0f);
-	body.shape[2] = Vec2(-w/2.0f, -h/2.0f);
-	body.shape[3] = Vec2(-w/2.0f, h/2.0f);
+	body.shape[0] = Vector2(w/2.0f, h/2.0f);
+	body.shape[1] = Vector2(w/2.0f, -h/2.0f);
+	body.shape[2] = Vector2(-w/2.0f, -h/2.0f);
+	body.shape[3] = Vector2(-w/2.0f, h/2.0f);
 	
 	return body;
 }
@@ -44,41 +48,212 @@ static void AddBody(Body body, Game *game){
 	game->bodies[game->bodyCount++] = body;
 }
 
-void InitGame(Game *game){
-	//Todo: check this
-	//*game = (Game){0};
-	AddBody(CreateCircle(Vec2(100.0f,-100.0f), Vec2(0.1f, 0.1f), 20.0f, 1.0f), game);
-	AddBody(CreateRectangle(Vec2(320.0f,150.0f), Vec2(0.0f, 0.0f), 20.0f, 20.0f, 1.0f), game);
+
+static void ResolveOverlap(Collision *collisions, int count, Body *bodies, int bodyCount, float dt){
+	for(int i = 0; i < count; i++){
+		Collision *collision = collisions+i;
+		
+		Body *body1 = collision->body1;
+		Body *body2 = collision->body2;
+
+		Vector2 d = Vector2Mul(collision->depth/(body1->inv_mass+body2->inv_mass),collision->normal);
+		body1->position = Vector2Subtract(body1->position, Vector2Mul(body1->inv_mass, d));
+		body2->position = Vector2Add(body2->position, Vector2Mul(body2->inv_mass, d));
+	}
+}*/
+
+#define CIRCLE_VERT_COUNT 32
+static Body CreateCircle(Vector2 pos, Vector2 vel, float radius, float mass){
+	Body body = (Body){
+		.position = pos,
+		.velocity = vel,
+		.color = RED,
+		.vertCount = CIRCLE_VERT_COUNT,
+		.inv_mass = 1.0f/mass
+	};
 	
-	//AddBody(CreateCircle(Vec2(300.0f,200.0f), Vec2(0.0f, -0.1f), 20.0f, 1.0f), game);
+	for(int i = 0; i < CIRCLE_VERT_COUNT; i++){
+		body.shape[i] = (Vector2){radius*cosf(i/(float)CIRCLE_VERT_COUNT*2.0f*PI), radius*sinf(i/(float)CIRCLE_VERT_COUNT*2.0f*PI)};
+	}
+	
+	return body;
+}
+
+static Body CreateRectangleangle(Vector2 pos, Vector2 vel, float w, float h, float mass){
+	Body body = (Body){
+		.position = pos,
+		.velocity = vel,
+		.color = RED,
+		.vertCount = 4,
+		.inv_mass = 1.0f/mass
+	};
+	
+	body.shape[0] = (Vector2){w/2.0f, h/2.0f};
+	body.shape[1] = (Vector2){w/2.0f, -h/2.0f};
+	body.shape[2] = (Vector2){-w/2.0f, -h/2.0f};
+	body.shape[3] = (Vector2){-w/2.0f, h/2.0f};
+	
+	return body;
+}
+
+static void AddBody(Body body, Game *game){
+	game->bodies[game->bodyCount++] = body;
+}
+
+void InitGame(Game *game){	
+	AddBody(CreateCircle((Vector2){100.0f,100.0f}, (Vector2){50.0f, 0.0f}, 20.0f, 1.0f), game);
+
+	AddBody(CreateRectangleangle((Vector2){320.0f,150.0f}, (Vector2){0.0f, 0.0f}, 20.0f, 20.0f, 1.0f), game);
 
 	for(int i = 0; i < 10; i++){
-		AddBody(CreateCircle(Vec2(300.0f+40*i+i,100.0f), Vec2(0.0f, 0.0f), 20.0f, 1.0f), game);
+		AddBody(CreateCircle((Vector2){300.0f+40*i+i,100.0f}, (Vector2){0.0f, 0.0f}, 20.0f, 1.0f), game);
 	}
 
 	return;
 }
 
-static void TranslateBodies(Body *bodies, u32 count){
+
+//TODO: remove this
+#define MAX_COLLISIONS BODY_MAX
+static int CheckCollisions(Body *bodies, int count, Collision *collisions){	
+	int numPotentialCollisions = 0;
+	Collision *potentialCollisions = malloc(sizeof(Collision)*MAX_COLLISIONS);
+	for(int i = 0; i < count-1; i++){
+		Body *body1 = bodies+i;
+		for(int j = i+1; j < count; j++){
+			Body *body2 = bodies+j;
+
+			if(CheckCollisionRecs(body1->AABB, body2->AABB)){
+				Vector2 diff = Vector2Subtract(body1->position, body2->position);
+				
+				potentialCollisions[numPotentialCollisions++] = (Collision){
+					.body1 = body1,
+					.body2 = body2,					
+				};
+				
+			}
+		}
+	}
+	
+	int numCollisions = 0;
+	
+	for(int i = 0; i < numPotentialCollisions; i++){
+		Collision *potCollision = potentialCollisions+i;
+		Body *body1 = potCollision->body1;
+		Body *body2 = potCollision->body2;
+		
+		float penDist = INFINITY;
+		Vector2 penNorm = (Vector2){1.0, 0.0};
+		
+		bool collides = true;
+		for(int b = 0; b < 2; b++){
+			for(int i = 0; i < body1->vertCount-1; i++){
+				Vector2 P1 = body1->vertices[i];
+				Vector2 P2 = body1->vertices[(i+1) % body1->vertCount];
+				Vector2 deltaP = Vector2Normalize(Vector2Subtract(P1, P2));
+				Vector2 n = (Vector2){-deltaP.y, deltaP.x};
+				
+				float b1_min = INFINITY;
+				float b1_max = -INFINITY;
+				float b2_min = INFINITY;
+				float b2_max = -INFINITY;
+				for(int j = 0; j < body1->vertCount; j++){
+					float proj = Vector2DotProduct(n, body1->vertices[j]);
+					if(proj > b1_max){
+						b1_max = proj;
+					}
+					if(proj < b1_min){
+						b1_min = proj;
+					}
+				}
+				
+				for(int j = 0; j < body2->vertCount; j++){
+					float proj = Vector2DotProduct(n, body2->vertices[j]);
+					if(proj > b2_max){
+						b2_max = proj;
+					}
+					if(proj < b2_min){
+						b2_min = proj;
+					}
+				}
+				
+				collides = collides && b1_min <= b2_max && b1_max >= b2_min; 
+				
+				//TODO: SIGN decides if collides?
+				if(collides){
+					float curPenDist = MIN(b1_max, b2_max) - MAX(b2_min, b2_max);
+					if(curPenDist < penDist){
+						penDist = curPenDist;
+						if(b == 0)
+							penNorm = n;
+						else
+							penNorm = Vector2Scale(n, -1.0f);
+					}
+				}
+				
+			}
+			Body *temp = body2;
+			body2 = body1;
+			body1 = temp;
+		}
+		
+		if(collides){
+			collisions[numCollisions] = *potCollision;
+			collisions[numCollisions].normal = penNorm;
+			numCollisions++;
+		}
+	}
+	
+	free(potentialCollisions);
+	
+	return numCollisions;
+}
+
+static void ResolveCollisions(Collision *collisions, int count, Body *bodies, int bodyCount, float dt){
+	for(int i = 0; i < count; i++){
+		Collision *collision = collisions+i;
+		
+		Body *body1 = collision->body1;
+		Body *body2 = collision->body2;
+
+		float vRelNorm = Vector2DotProduct(Vector2Subtract(body2->velocity, body1->velocity), collision->normal);
+		
+		if(vRelNorm > 0.0f){
+			continue;
+		}
+		
+		//changed to 1.9
+		Vector2 j = Vector2Scale(collision->normal, -1.9f*vRelNorm/(body1->inv_mass+body2->inv_mass));
+						
+		body1->impulse = Vector2Subtract(body1->impulse, j);
+		body2->impulse = Vector2Add(body2->impulse, j);
+	}
+	
+	
+	for(int i = 0; i < bodyCount; i++){
+		Body *body = bodies+i;
+		body->velocity = Vector2Add(body->velocity, Vector2Scale(body->impulse, body->inv_mass));
+	}
+	
+}
+
+static void UpdateBodies(Body *bodies, int count, float dt){
 	for(int i = 0; i < count; i++){
 		Body *body = bodies+i;
-		body->rotation += 0.01;
-		for(int j = 0; j < body->vertCount; j++){
-			real angle = body->rotation;
-			v2 rotated = Vec2(cos(angle)*body->shape[j].x-sin(angle)*body->shape[j].y, sin(angle)*body->shape[j].x+cos(angle)*body->shape[j].y);
-			v2 vert = V2Add(rotated, body->position);
-			body->vertices[j] = vert;
-		}
+		
+		body->position = Vector2Add(body->position, Vector2Scale(body->velocity, dt));
+				
+		body->impulse = (Vector2){0.0f, 0.0f};
 	}
 }
 
-static void UpdateAABB(Body *bodies, u32 count){
+static void UpdateAABB(Body *bodies, int count){
 	for(int i = 0; i < count; i++){
 		Body *body = bodies+i;
-		v2 max = body->vertices[0];
-		v2 min = body->vertices[0];
+		Vector2 max = body->vertices[0];
+		Vector2 min = body->vertices[0];
 		for(int j = 0; j < body->vertCount; j++){
-			v2 vert = body->vertices[j];
+			Vector2 vert = body->vertices[j];
 			
 			//TODO: problem with negative coords?
 			if(vert.x > max.x){
@@ -95,254 +270,94 @@ static void UpdateAABB(Body *bodies, u32 count){
 				min.y = vert.y;
 			}
 		}
-		body->AABB = Rect(min.x, min.y, max.x-min.x, max.y-min.y);
+		body->AABB = (Rectangle){min.x, min.y, max.x-min.x, max.y-min.y};
 	}
 }
 
-//TODO: remove this
-#define MAX_COLLISIONS BODY_MAX
-static u32 CheckCollisions(Body *bodies, u32 count, Collision *collisions){	
+static void TranslateBodies(Body *bodies, int count){
 	for(int i = 0; i < count; i++){
 		Body *body = bodies+i;
-		body->collides = false;
-	}
-	
-	u32 numPotentialCollisions = 0;
-	Collision *potentialCollisions = AllocArray(Collision, MAX_COLLISIONS);
-	for(int i = 0; i < count-1; i++){
-		Body *body1 = bodies+i;
-		for(int j = i+1; j < count; j++){
-			Body *body2 = bodies+j;
-			
-			rect a = body1->AABB;
-			rect b = body2->AABB;
-			
-			bool xCollides = a.x <= b.x+b.w && a.x +a.w >= b.x;
-			bool yCollides = a.y <= b.y+b.h && a.y +a.h >= b.y;
-			bool collision = xCollides && yCollides;
-			
-			/*body1->collides |= collision;
-			body2->collides |= collision;*/
-			
-			if(collision){
-				v2 diff = V2Sub(body1->position, body2->position);
-				
-				potentialCollisions[numPotentialCollisions++] = (Collision){
-					.body1 = body1,
-					.body2 = body2,					
-				};
-				
-			}
-		}
-	}
-	
-	u32 numCollisions = 0;
-	
-	for(int i = 0; i < numPotentialCollisions; i++){
-		Collision *potCollision = potentialCollisions+i;
-		Body *body1 = potCollision->body1;
-		Body *body2 = potCollision->body2;
-		
-		real penDist = INFINITY;
-		v2 penNorm = Vec2(1.0, 0.0);
-		
-		bool collides = true;
-		for(int b = 0; b < 2; b++){
-			for(int i = 0; i < body1->vertCount+1; i++){
-				v2 P1 = body1->vertices[i];
-				v2 P2 = body1->vertices[(i+1) % body1->vertCount];
-				v2 deltaP = V2Norm(V2Sub(P1, P2));
-				v2 n = Vec2(-deltaP.y, deltaP.x);
-				
-				real b1_min = INFINITY;
-				real b1_max = -INFINITY;
-				real b2_min = INFINITY;
-				real b2_max = -INFINITY;
-				for(int j = 0; j < body1->vertCount; j++){
-					real proj = V2Dot(n, body1->vertices[j]);
-					if(proj > b1_max){
-						b1_max = proj;
-					}
-					if(proj < b1_min){
-						b1_min = proj;
-					}
-				}
-				
-				for(int j = 0; j < body2->vertCount; j++){
-					real proj = V2Dot(n, body2->vertices[j]);
-					if(proj > b2_max){
-						b2_max = proj;
-					}
-					if(proj < b2_min){
-						b2_min = proj;
-					}
-				}
-				
-				collides = collides && b1_min <= b2_max && b1_max >= b2_min; 
-				
-				//TODO: SIGN decides if collides?
-				if(collides){
-					real curPenDist = MIN(b1_max, b2_max) - MAX(b2_min, b2_max);
-					if(curPenDist < penDist){
-						penDist = curPenDist;
-						if(b == 0)
-							penNorm = n;
-						else
-							penNorm = V2Mul(-1.0, n);
-					}
-				}
-				
-			}
-			Body *temp = body2;
-			body2 = body1;
-			body1 = temp;
-		}
-		
-		if(collides){
-			collisions[numCollisions] = *potCollision;
-			collisions[numCollisions].normal = penNorm;
-			potCollision->body1->collides |= collides;
-			potCollision->body2->collides |= collides;
-			numCollisions++;
-		}
-	}
-	
-	return numCollisions;
-}
-
-static void DrawBodies(SDL_Renderer *renderer, Body *bodies, u32 count){
-	
-	for(int i = 0; i < count; i++){
-		Body *body = bodies+i;
-		SDL_Point *points = AllocArray(SDL_Point, body->vertCount+1);
-		
+		body->rotation += 0.001;
 		for(int j = 0; j < body->vertCount; j++){
-			points[j].x = (i32)body->vertices[j].x;
-			points[j].y = (i32)body->vertices[j].y;
+			float angle = body->rotation;
+			Vector2 rotated = Vector2Rotate(body->shape[j], angle*RAD2DEG);
+			Vector2 vertex = Vector2Add(rotated, body->position);
+			body->vertices[j] = vertex;
 		}
-		
-		points[body->vertCount].x = (i32)body->vertices[0].x;
-		points[body->vertCount].y = (i32)body->vertices[0].y;
-		
-		SDL_SetRenderDrawColor(renderer, body->color.r*255, body->color.g*255, body->color.b*255, SDL_ALPHA_OPAQUE);
-		SDL_RenderDrawLines(renderer, points, body->vertCount+1);
-		
-		if(body->collides){
-			SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-		}
-		else{
-			SDL_SetRenderDrawColor(renderer, 255, 0, 255, 100);
-		}
-		
-		const SDL_Rect aabbRect = {
-			.x = body->AABB.x,
-			.y = body->AABB.y,
-			.w = body->AABB.w,
-			.h = body->AABB.h,
-		};
-		SDL_RenderDrawRect(renderer, &aabbRect);
-		
-		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-		
-		SDL_RenderDrawLine(renderer, points[0].x, points[0].y, (i32)body->position.x, (i32)body->position.y);
-		
-		Free(points);
 	}
-
 }
 
-static void UpdateBodies(Body *bodies, u32 count, real dt){
+static void DrawBodies(Body *bodies, int count){
+	
 	for(int i = 0; i < count; i++){
 		Body *body = bodies+i;
-		
-		if(body->inv_mass != 0){
-			body->velocity = V2Add(body->velocity, V2Mul(dt*0.0f, Vec2(0.0f, 0.0001f)));
+		DrawLineStrip(body->vertices, body->vertCount, body->color);
+		DrawLineV(body->vertices[0], body->vertices[body->vertCount-1], body->color);
+		DrawLineV(body->position, body->vertices[0], body->color);
+
+	}
+
+}
+
+static void MouseInputUpdate(Game *game, float dt){
+	Vector2 mousePos = GetMousePosition();
+	
+	if(IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)){
+		AddBody(CreateCircle(mousePos, (Vector2){0.0f, 0.0f}, 20.0f, 1.0f), game);
+	}
+	
+	if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){		
+		for(int i = 0; i < game->bodyCount; i++){
+			Body *body = game->bodies+i;
+			if(CheckCollisionPointRec(mousePos, body->AABB)){
+				game->draggingBody = 1;
+				game->latchedBody = body;
+			}
+		}
+	}
+	
+	if(game->draggingBody){
+		if(IsMouseButtonReleased(MOUSE_LEFT_BUTTON)){
+			game->draggingBody = 0;
+			game->latchedBody = 0;
+			return;
 		}
 		
-		body->position = V2Add(body->position, V2Mul(dt, body->velocity));
-				
-		body->impulse = Vec2(0.0f, 0.0f);
+		Vector2 displacement = Vector2Subtract(mousePos, game->latchedBody->position);
+		
+		game->latchedBody->velocity = Vector2Add(game->latchedBody->velocity, Vector2Scale(displacement, dt*3.0f));
+		game->latchedBody->velocity = Vector2Scale(game->latchedBody->velocity, 1.0f-dt);
 	}
 }
 
-static void ResolveCollisions(Collision *collisions, u32 count, Body *bodies, u32 bodyCount, real dt){
-	for(int i = 0; i < count; i++){
-		Collision *collision = collisions+i;
-		
-		Body *body1 = collision->body1;
-		Body *body2 = collision->body2;
-
-		real vRelNorm = V2Dot(V2Sub(body2->velocity, body1->velocity), collision->normal);
-		
-		if(vRelNorm > 0.0f){
-			continue;
-		}
-		
-		//changed to 1.9
-		v2 j = V2Mul(-1.9f*vRelNorm/(body1->inv_mass+body2->inv_mass), collision->normal);
-						
-		body1->impulse = V2Sub(body1->impulse, j);
-		body2->impulse = V2Add(body2->impulse, j);
-	}
-	
-	
-	for(int i = 0; i < bodyCount; i++){
-		Body *body = bodies+i;
-		body->velocity = V2Add(body->velocity, V2Mul(body->inv_mass, body->impulse));
-	}
-	
-}
-
-static void ResolveOverlap(Collision *collisions, u32 count, Body *bodies, u32 bodyCount, real dt){
-	for(int i = 0; i < count; i++){
-		Collision *collision = collisions+i;
-		
-		Body *body1 = collision->body1;
-		Body *body2 = collision->body2;
-
-		v2 d = V2Mul(collision->depth/(body1->inv_mass+body2->inv_mass),collision->normal);
-		body1->position = V2Sub(body1->position, V2Mul(body1->inv_mass, d));
-		body2->position = V2Add(body2->position, V2Mul(body2->inv_mass, d));
-	}
-}
-
-void Frame(Game *game, real dt, SDL_Renderer *renderer){
-	//TODO: move to init?
-	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-	SDL_RenderClear(renderer);
-	
-	u64 start = SDL_GetPerformanceCounter();
+void UpdateGame(Game *game, float dt){
+	MouseInputUpdate(game, dt);
 	
 	UpdateBodies(game->bodies, game->bodyCount, dt);
-	
-	u64 updateTick = SDL_GetPerformanceCounter();
-	
+		
 	TranslateBodies(game->bodies, game->bodyCount);
 	UpdateAABB(game->bodies, game->bodyCount);
-	
-	u64 translateTick = SDL_GetPerformanceCounter();
-			
-	Collision *collisions = AllocArray(Collision, MAX_COLLISIONS);
-	u32 numCollisions = CheckCollisions(game->bodies, game->bodyCount, collisions);	
+		
+	Collision *collisions = malloc(sizeof(Collision)*MAX_COLLISIONS);
+	int numCollisions = CheckCollisions(game->bodies, game->bodyCount, collisions);	
 		
 	ResolveCollisions(collisions, numCollisions, game->bodies, game->bodyCount, dt);	
-	Free(collisions);
+	free(collisions);
 	
-	u64 collisionTick = SDL_GetPerformanceCounter();
+	return;
+}
+
+void DrawGame(Game *game, float dt){
+	ClearBackground(RAYWHITE);
+	DrawFPS(10,10);
 	
-	DrawBodies(renderer, game->bodies, game->bodyCount);
+	char bcountString[64];
+	snprintf(bcountString, 64, "Body count: %i", game->bodyCount);
+	DrawText(bcountString, 10, 30, 20, GREEN);
 	
-	u64 drawTick = SDL_GetPerformanceCounter();
+	if(game->draggingBody){
+		DrawLineV(game->latchedBody->position, GetMousePosition(), VIOLET);
+	}
 	
-	u64 end = SDL_GetPerformanceCounter();
-	float frameTime = (end - start)*1000000.0f/SDL_GetPerformanceFrequency();
-	float updateTime = (updateTick - start)*1000000.0f/SDL_GetPerformanceFrequency();
-	float translateTime = (translateTick - updateTick)*1000000.0f/SDL_GetPerformanceFrequency();
-	float collisionTime = (collisionTick - translateTick)*1000000.0f/SDL_GetPerformanceFrequency();
-	float drawTime = (drawTick - collisionTick)*1000000.0f/SDL_GetPerformanceFrequency();
-	printf("Frame time: %9.5f us Upd: %9.5f us Trans: %9.5f us Col: %9.5f us Draw %9.5f us\n", frameTime, updateTime, translateTime, collisionTime, drawTime);
-		
-	SDL_RenderPresent(renderer);
+	DrawBodies(game->bodies, game->bodyCount);
 }

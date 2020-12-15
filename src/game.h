@@ -2,32 +2,35 @@
 #define BODY_MAX 2048
 
 typedef struct{
-	v2 position;
-	v2 velocity;
-	v2 impulse;
-	rect AABB;
-	real rotation;
-	u32 vertCount;
-	real inv_mass;
-	v2 shape[BODY_MAX_VERT];
-	v2 vertices[BODY_MAX_VERT]; //Shape translated to world space
+	Vector2 position;
+	Vector2 velocity;
+	Vector2 impulse;
+	Rectangle AABB;
+	float rotation;
+	float inv_mass;
+	int vertCount;
+	Vector2 shape[BODY_MAX_VERT];
+	Vector2 vertices[BODY_MAX_VERT]; //Shape translated to world space
 	
 	//Debug vars:
-	v3 color;
-	bool collides;
+	Color color;
 } Body;
 
 typedef struct{
 	Body *body1;
 	Body *body2;
-	v2 normal;
-	real depth;
+	Vector2 normal;
+	float depth;
 } Collision;
 
 typedef struct{
-	u32 bodyCount;
+	int bodyCount;
 	Body bodies[BODY_MAX];
+	
+	Body *latchedBody;
+	bool draggingBody;
 } Game;
 
 void InitGame(Game *game);
-void Frame(Game *game, real dt, SDL_Renderer *renderer);
+void UpdateGame(Game *game, float dt);
+void DrawGame(Game *game, float dt);
